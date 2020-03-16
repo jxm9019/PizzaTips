@@ -5,6 +5,7 @@ App to collect tip data for analysis
  
 @author: Jake from State Farm
 '''
+from pip._internal import self_outdated_check
 
 class Employee():
     """Employee constructor
@@ -83,13 +84,10 @@ class Map():
     super_map = {}
     
     def __init__(self):
-        for a in range(ord('c'),ord('p')):
+        for a in range(ord('C'),ord('P')):
             for i in range(3,20):
                 self.super_map[chr(a)+str(i)] = Sec(chr(a)+str(i))
-        
-    def add_tip(self, Tip):
-        print("Map.add_tip(Tip)")
-        pass
+
         
 class Sec():
     """Sector of map that holds list of Tip objects
@@ -97,9 +95,12 @@ class Sec():
     def __init__(self, name):
         self.name = name
         self.sec_tips = []
+            
+    def add_tip(self, tip_obj):
+        supermap[tip_obj.sector] = 
+        
     
-    
-class Tip(Map):
+class Tip():
     
     gross_tips = 0.0
     #TODO from db
@@ -109,7 +110,7 @@ class Tip(Map):
         self.tip_amt = tip_amt
         self.tip_type = tip_type 
         Tip.gross_tips += tip_amt
-#         self.super.add_tip(self)
+        Sec.add_tip(self, self)
         
          
     def __str__(self):
@@ -119,7 +120,12 @@ class Tip(Map):
         return "Tip({}, {}, {})".format(self.tip_amt, self.tip_type, self.sector)
         
     def __add__(self, other):
-        return self.tip_amt + other.tip_amt
+        if(isinstance(other,Tip)
+            return self.tip_amt + other.tip_amt
+        elif(isinstance(other, float))
+            return self.tip_amt + other
+        else
+            return 'Cannot add {} and {}\n'.format(self.type ,other.type)
     
     @classmethod
     def gross(cls):

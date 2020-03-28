@@ -5,7 +5,6 @@ App to collect tip data for analysis
  
 @author: Jake from State Farm
 '''
-# from pip._internal import self_outdated_check
 
 class Employee():
     """Employee constructor
@@ -19,12 +18,24 @@ class Employee():
     def __init__(self, first, last):
         self.first = first
         self.last = last
-        self.map = Map()
+        self.emp_map = self.create_map()
         self.pay = 11.10
     
     def set_pay(self, pay=11.10):
         self.pay = pay
         
+    def create_map(self):
+        mapo = {}
+        for a in range(ord('C'),ord('P')):
+            for i in range(3,20):
+                mapo[chr(a)+str(i)] = Sec(chr(a)+str(i))
+        return mapo
+    
+    def add_tip(self, sector, tip_amt, tip_type):
+        new_tip = Tip(sector, tip_amt, tip_type)
+        self.emp_map[new_tip.sector].add_tip_sec(new_tip)
+        self.SHIFTS[len(self.SHIFTS)-1].add_tip(new_tip)
+    
     @classmethod
     def from_pay(cls,first, last, pay):
         """Alternate Constructor
@@ -51,9 +62,12 @@ class Employee():
     @property
     def wage(self):
         return '${}/hr'.format(self.pay)
+    @property
+    def shifts(self):
+        return self.SHIFTS
 
         
-class Shift(Employee):
+class Shift():
     """Shift constructor
     
     Takes schedule time and creates Shift Object
@@ -65,10 +79,10 @@ class Shift(Employee):
         self.tips = []
         self.total = 0.0
         
-    def add_tip(self, sector, tip_amt, tip_type):
-        """Creates and adds Tip object to list of tips for the shift"""
-        self.tips.append(Tip(sector, tip_amt, tip_type))
-        self.total += tip_amt
+    def add_tip(self, tip_obj):
+        """Adds Tip object to list of tips for the shift"""
+        self.tips.append(tip_obj)
+        self.total += tip_obj.tip_amt
         
     @property
     def tip_total(self):
@@ -76,23 +90,23 @@ class Shift(Employee):
         return '${}'.format(self.total)
     
         
-class Map():
-    """2D Map of sectors
-    
-    holds total tips, 'heatmap', tips per sector
-    """
-    super_map = {}
-    
-    def __init__(self):
-        for a in range(ord('C'),ord('P')):
-            for i in range(3,20):
-                self.super_map[chr(a)+str(i)] = Sec(chr(a)+str(i))
-
-    
-    def add_tip_map(self, tip_obj):
-        print("add tip to map")
-        self.super_map[tip_obj.sector].add_tip_sec(tip_obj)
-        
+# class Map():
+#     """2D Map of sectors
+#      
+#     holds total tips, 'heatmap', tips per sector
+#     """
+#     super_map = {}
+#      
+#     def __init__(self):
+#         for a in range(ord('C'),ord('P')):
+#             for i in range(3,20):
+#                 self.super_map[chr(a)+str(i)] = Sec(chr(a)+str(i))
+#  
+#      
+#     def add_tip_map(self, tip_obj):
+#         print("add tip to map")
+#         self.super_map[tip_obj.sector].add_tip_sec(tip_obj)
+#          
         
 class Sec():
     """Sector of map that holds list of Tip objects
@@ -108,7 +122,7 @@ class Sec():
         self.sector_total += tip_obj.tip_amt
         pass
     
-class Tip(Map):
+class Tip():
     
     gross_tips = 0.0
     #TODO from db
@@ -118,7 +132,7 @@ class Tip(Map):
         self.tip_amt = tip_amt
         self.tip_type = tip_type 
         Tip.gross_tips += tip_amt
-        Map.add_tip_map(self, self)
+
         
          
     def __str__(self):
@@ -147,12 +161,14 @@ if __name__ == '__main__':
     
     print(jake.fullname)
     print(jake.wage)
-    shift1 = jake.new_shift(10, 13, "2/19/20" )
-    shift1.add_tip("J13",5.00,"$")
-    shift1.add_tip("D10",10.00,"cc")
+    jake.new_shift(10, 13, "2/19/20" )
+    jake.add_tip("J13",5.00,"$")
+    jake.add_tip("D10",10.00,"cc")
     
-    shift2 = jake.new_shift(17,24,"2/21/20")
-    shift2.add_tip("D12", 12.00,"cc")
+    jake.new_shift(17,24,"2/21/20")
+    jake.add_tip("D12", 12.00,"cc")
+    shift1 = jake.shifts[0]
+    shift2 = jake.shifts[1]
     print(shift1.tips)
     print(shift2.tips)
     print(shift1.tip_total)

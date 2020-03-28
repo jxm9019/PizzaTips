@@ -25,16 +25,24 @@ class Employee():
         self.pay = pay
         
     def create_map(self):
+        """Creates dict ,,map'' of sectors by Marks^TM
+        
+        
+        Values range from C to P and 3-19, other sections are considered "OUT"
+        """
         mapo = {}
         for a in range(ord('C'),ord('P')):
             for i in range(3,20):
                 mapo[chr(a)+str(i)] = Sec(chr(a)+str(i))
+                
+        mapo["OUT"] = Sec("OUT")
         return mapo
     
-    def add_tip(self, sector, tip_amt, tip_type):
+    def add_tip_emp(self, sector, tip_amt, tip_type):
+        """Creates Tip object, adds to employee's map, adds to latest shift"""
         new_tip = Tip(sector, tip_amt, tip_type)
         self.emp_map[new_tip.sector].add_tip_sec(new_tip)
-        self.SHIFTS[len(self.SHIFTS)-1].add_tip(new_tip)
+        self.SHIFTS[len(self.SHIFTS)-1].add_tip_shift(new_tip)
     
     @classmethod
     def from_pay(cls,first, last, pay):
@@ -66,6 +74,10 @@ class Employee():
     def shifts(self):
         return self.SHIFTS
 
+    def __str__(self):
+        return "Employee {}, {}".format(self.fullname, self.wage)
+    def __repr__(self):
+        return "Employee({}, {})".format(self.first, self.last)
         
 class Shift():
     """Shift constructor
@@ -79,7 +91,7 @@ class Shift():
         self.tips = []
         self.total = 0.0
         
-    def add_tip(self, tip_obj):
+    def add_tip_shift(self, tip_obj):
         """Adds Tip object to list of tips for the shift"""
         self.tips.append(tip_obj)
         self.total += tip_obj.tip_amt
@@ -89,38 +101,23 @@ class Shift():
         """Returns total tips from shift"""
         return '${}'.format(self.total)
     
-        
-# class Map():
-#     """2D Map of sectors
-#      
-#     holds total tips, 'heatmap', tips per sector
-#     """
-#     super_map = {}
-#      
-#     def __init__(self):
-#         for a in range(ord('C'),ord('P')):
-#             for i in range(3,20):
-#                 self.super_map[chr(a)+str(i)] = Sec(chr(a)+str(i))
-#  
-#      
-#     def add_tip_map(self, tip_obj):
-#         print("add tip to map")
-#         self.super_map[tip_obj.sector].add_tip_sec(tip_obj)
-#          
-        
+    
 class Sec():
     """Sector of map that holds list of Tip objects
     """
-    sector_total = 0.0
     def __init__(self, name):
         self.name = name
         self.sec_tips = []
+        self.sector_total = 0.0
         
     def add_tip_sec(self, tip_obj):
-        print("add tip to sector")
         self.sec_tips.append(tip_obj)
         self.sector_total += tip_obj.tip_amt
-        pass
+    
+    @property
+    def sec_total(self):
+        return '${}0'.format(self.sector_total)
+    
     
 class Tip():
     
@@ -128,6 +125,14 @@ class Tip():
     #TODO from db
     
     def __init__(self, sector, tip_amt, tip_type):
+        """Tip Constructor
+        
+        Takes sector as string "D13", "L10";
+              tip_amt as float 5.0, 9.43;
+              tip_type as string "$", "cc", "cc/$"
+              
+        Adds to total amount of tips
+        """
         self.sector = sector
         self.tip_amt = tip_amt
         self.tip_type = tip_type 
@@ -142,6 +147,7 @@ class Tip():
         return "Tip({}, {}, {})".format(self.tip_amt, self.tip_type, self.sector)
         
     def __add__(self, other):
+        """Overrides add function to access variables"""
         if(isinstance(other,Tip)):
             return self.tip_amt + other.tip_amt
         elif(isinstance(other, float)):
@@ -162,11 +168,11 @@ if __name__ == '__main__':
     print(jake.fullname)
     print(jake.wage)
     jake.new_shift(10, 13, "2/19/20" )
-    jake.add_tip("J13",5.00,"$")
-    jake.add_tip("D10",10.00,"cc")
+    jake.add_tip_emp("D10",5.00,"$")
+    jake.add_tip_emp("D10",10.00,"cc")
     
     jake.new_shift(17,24,"2/21/20")
-    jake.add_tip("D12", 12.00,"cc")
+    jake.add_tip_emp("D12", 12.00,"cc")
     shift1 = jake.shifts[0]
     shift2 = jake.shifts[1]
     print(shift1.tips)

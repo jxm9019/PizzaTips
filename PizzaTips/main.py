@@ -34,7 +34,7 @@ class Employee():
         emp = cls(first, last)
         cls.set_pay(emp, pay)
         return emp
-        
+         
     @classmethod
     def new_shift(cls, start, end, date):
         """Creates and adds shift to Employee's list of shifts

@@ -5,7 +5,7 @@ App to collect tip data for analysis
  
 @author: Jake from State Farm
 '''
-from pip._internal import self_outdated_check
+# from pip._internal import self_outdated_check
 
 class Employee():
     """Employee constructor
@@ -19,9 +19,12 @@ class Employee():
     def __init__(self, first, last):
         self.first = first
         self.last = last
-        self.emp_map = Map()
+        self.map = Map()
         self.pay = 11.10
     
+    def set_pay(self, pay=11.10):
+        self.pay = pay
+        
     @classmethod
     def from_pay(cls,first, last, pay):
         """Alternate Constructor
@@ -31,9 +34,6 @@ class Employee():
         emp = cls(first, last)
         cls.set_pay(emp, pay)
         return emp
-    
-    def set_pay(self, pay=11.10):
-        self.pay = pay
         
     @classmethod
     def new_shift(cls, start, end, date):
@@ -53,7 +53,7 @@ class Employee():
         return '${}/hr'.format(self.pay)
 
         
-class Shift():
+class Shift(Employee):
     """Shift constructor
     
     Takes schedule time and creates Shift Object
@@ -88,19 +88,27 @@ class Map():
             for i in range(3,20):
                 self.super_map[chr(a)+str(i)] = Sec(chr(a)+str(i))
 
+    
+    def add_tip_map(self, tip_obj):
+        print("add tip to map")
+        self.super_map[tip_obj.sector].add_tip_sec(tip_obj)
+        
         
 class Sec():
     """Sector of map that holds list of Tip objects
     """
+    sector_total = 0.0
     def __init__(self, name):
         self.name = name
         self.sec_tips = []
-            
-    def add_tip(self, tip_obj):
-        supermap[tip_obj.sector] = 
         
+    def add_tip_sec(self, tip_obj):
+        print("add tip to sector")
+        self.sec_tips.append(tip_obj)
+        self.sector_total += tip_obj.tip_amt
+        pass
     
-class Tip():
+class Tip(Map):
     
     gross_tips = 0.0
     #TODO from db
@@ -110,7 +118,7 @@ class Tip():
         self.tip_amt = tip_amt
         self.tip_type = tip_type 
         Tip.gross_tips += tip_amt
-        Sec.add_tip(self, self)
+        Map.add_tip_map(self, self)
         
          
     def __str__(self):
@@ -120,12 +128,12 @@ class Tip():
         return "Tip({}, {}, {})".format(self.tip_amt, self.tip_type, self.sector)
         
     def __add__(self, other):
-        if(isinstance(other,Tip)
+        if(isinstance(other,Tip)):
             return self.tip_amt + other.tip_amt
-        elif(isinstance(other, float))
+        elif(isinstance(other, float)):
             return self.tip_amt + other
-        else
-            return 'Cannot add {} and {}\n'.format(self.type ,other.type)
+        else:
+            return 'Cannot add {} and {}\n'.format(self.type, other.type)
     
     @classmethod
     def gross(cls):
@@ -149,8 +157,6 @@ if __name__ == '__main__':
     print(shift2.tips)
     print(shift1.tip_total)
     print(shift2.tip_total)
-    
-    storemap = jake.emp_map
     
     print('derp')
     

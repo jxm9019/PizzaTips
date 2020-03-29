@@ -6,13 +6,16 @@ App to collect tip data for analysis
 @author: Jake from State Farm
 '''
 
+from collections import OrderedDict
+import re
+
 class Employee():
     """Employee constructor
     
     Takes in first and last name and sets pay to minimum wage
     """
     
-    SHIFTS = []
+    shifts = OrderedDict()
     # TODO from db
     
     def __init__(self, first, last):
@@ -70,9 +73,7 @@ class Employee():
     @property
     def wage(self):
         return '${}/hr'.format(self.pay)
-    @property
-    def shifts(self):
-        return self.SHIFTS
+
 
     def __str__(self):
         return "Employee {}, {}".format(self.fullname, self.wage)
@@ -129,15 +130,23 @@ class Tip():
         
         Takes sector as string "D13", "L10";
               tip_amt as float 5.0, 9.43;
-              tip_type as string "$", "cc", "cc/$"
+              tip_type as string "$", "cc", "cc/$, sz"
               
         Adds to total amount of tips
         """
         self.sector = sector
-        self.tip_amt = tip_amt
         self.tip_type = tip_type 
-        Tip.gross_tips += tip_amt
+        if tip_type == "cc/$":
+            tip_split = tip_amt.split("/")
+            tip_amt = float(tip_split[0]) + float(tip_split[1])
+        self.tip_amt = float(tip_amt)
+        Tip.gross_tips += self.tip_amt
 
+    @classmethod
+    def from_string(cls, tip_str):
+        tip = re.sub(r"\s+", "", tip_str).split(',')
+#         print(tip)
+        return cls(tip[0], tip[1], tip[2]) 
         
          
     def __str__(self):

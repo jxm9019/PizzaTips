@@ -6,8 +6,8 @@ App to collect tip data for analysis
 @author: Jake from State Farm
 '''
 
-from collections import OrderedDict
 import re
+import from_CSV
 
 class Employee():
     """Employee constructor
@@ -15,7 +15,7 @@ class Employee():
     Takes in first and last name and sets pay to minimum wage
     """
     
-    shifts = OrderedDict()
+    
     # TODO from db
     
     def __init__(self, first, last):
@@ -23,6 +23,8 @@ class Employee():
         self.last = last
         self.emp_map = self.create_map()
         self.pay = 11.10
+        self.shifts = {}
+        self.gross_tips = 0.0
     
     def set_pay(self, pay=11.10):
         self.pay = pay
@@ -45,7 +47,20 @@ class Employee():
         """Creates Tip object, adds to employee's map, adds to latest shift"""
         new_tip = Tip(sector, tip_amt, tip_type)
         self.emp_map[new_tip.sector].add_tip_sec(new_tip)
-        self.SHIFTS[len(self.SHIFTS)-1].add_tip_shift(new_tip)
+        list(self.shifts.values())[-1].add_tip_shift(new_tip)
+        self.gross_tips += tip_amt
+#         self.shifts[len(self.shifts)-1].add_tip_shift(new_tip) # for use with list of shifts
+        
+    def add_tip_emp_csv(self, csv_fn):
+        """Processes CSV file and returns dict of Shifts"""
+        shifts_from_csv = from_CSV.get_data_from_csv(csv_fn)
+        for shif in shifts_from_csv.items():    # (date, Shift)
+            if shif[0] not in self.shifts:      # shif[0] is date
+                self.shifts[shif[0]] = shif[1]  # shif[1] is Shift obj
+            else:
+                self.shifts[shif[0]] + shif[1]
+            self.gross_tips += shif[1].shift_total
+        
     
     @classmethod
     def from_pay(cls,first, last, pay):
@@ -57,14 +72,14 @@ class Employee():
         cls.set_pay(emp, pay)
         return emp
          
-    @classmethod
-    def new_shift(cls, start, end, date):
+    def new_shift(self, date):
         """Creates and adds shift to Employee's list of shifts
         
         takes start and end times on schedule, and date
         """
-        shift = Shift(start, end, date)
-        cls.SHIFTS.append(shift)
+        shift = Shift(date)
+#         cls.shifts.append(shift) # for use with list of shifts
+        self.shifts[date] = shift
         return shift
     
     @property
@@ -85,23 +100,42 @@ class Shift():
     
     Takes schedule time and creates Shift Object
     """
-    def __init__(self, start, end, date):
-        self.start = start
-        self.end = end
+    def __init__(self, date):
         self.date = date
         self.tips = []
-        self.total = 0.0
+        self.shift_total = 0.0
         
     def add_tip_shift(self, tip_obj):
         """Adds Tip object to list of tips for the shift"""
         self.tips.append(tip_obj)
-        self.total += tip_obj.tip_amt
+        self.shift_total += tip_obj.tip_amt
         
+    def add_tip_shift_list(self, tip_list):
+        """Adds list of Tip objects to shift"""
+        self.tips += tip_list
+#         list_tot = 0.0
+        for tips in tip_list:
+            self.shift_total += tips.tip_amt            
+       
     @property
     def tip_total(self):
         """Returns total tips from shift"""
-        return '${}'.format(self.total)
+        return '${}'.format(self.shift_total)
     
+    def __add__(self, other):
+        if other.__class__.__name__ == 'Shift':
+            for tips in other.tips:
+                self.shift_total += tips.tip_amt
+            return self.tips.extend(other.tips)
+        elif(isinstance(other, list)):
+            for tips in list:
+                self.shift_total += tips.tip_amt
+            return self.tips.extend(other)
+        else:
+            return 'Cannot add {} and {}'.format(type(self), type(other))
+        
+    def __radd__(self, other):
+        return self.__add__(other)
     
 class Sec():
     """Sector of map that holds list of Tip objects
@@ -122,7 +156,7 @@ class Sec():
     
 class Tip():
     
-    gross_tips = 0.0
+#     gross_tips = 0.0
     #TODO from db
     
     def __init__(self, sector, tip_amt, tip_type):
@@ -140,7 +174,7 @@ class Tip():
             tip_split = tip_amt.split("/")
             tip_amt = float(tip_split[0]) + float(tip_split[1])
         self.tip_amt = float(tip_amt)
-        Tip.gross_tips += self.tip_amt
+#         Tip.gross_tips += self.tip_amt
 
     @classmethod
     def from_string(cls, tip_str):
@@ -153,7 +187,7 @@ class Tip():
         return '${}, {}, from sec {}'.format(self.tip_amt, self.tip_type, self.sector)
         
     def __repr__(self):
-        return "Tip({}, {}, {})".format(self.tip_amt, self.tip_type, self.sector)
+        return "Tip({}, {}, {})".format(self.sector, self.tip_amt, self.tip_type)
         
     def __add__(self, other):
         """Overrides add function to access variables"""
@@ -162,7 +196,7 @@ class Tip():
         elif(isinstance(other, float)):
             return self.tip_amt + other
         else:
-            return 'Cannot add {} and {}\n'.format(self.type, other.type)
+            return 'Cannot add {} and {}\n'.format(type(self), type(other))
     
     @classmethod
     def gross(cls):
@@ -176,14 +210,17 @@ if __name__ == '__main__':
     
     print(jake.fullname)
     print(jake.wage)
-    jake.new_shift(10, 13, "2/19/20" )
+    jake.new_shift("Wed, Feb 19" )
     jake.add_tip_emp("D10",5.00,"$")
     jake.add_tip_emp("D10",10.00,"cc")
+#     tip_list = [Tip("C17", 10.00, "$"), Tip("C16", 14.00, "cc"), Tip("C8", 5.00, "cc")]
     
-    jake.new_shift(17,24,"2/21/20")
+    jake.new_shift("Fri, Feb 21")
     jake.add_tip_emp("D12", 12.00,"cc")
-    shift1 = jake.shifts[0]
-    shift2 = jake.shifts[1]
+    shift1 = list(jake.shifts.items())[0][1]
+    shift2 = list(jake.shifts.items())[1][1]
+#     shift1.add_tip_shift_csv(tip_list)
+    jake.add_tip_emp_csv('Tips Breakdown 2020 - Feb20.csv')
     print(shift1.tips)
     print(shift2.tips)
     print(shift1.tip_total)

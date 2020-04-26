@@ -47,5 +47,5 @@ def get_shifts_from_csv(csv_fn):
     
 if __name__ == '__main__':
 #     testicles = get_tips_from_csv('Tips Breakdown 2020 - Feb20.csv')
-#     balls = get_shifts_from_csv('Marks Tips 2020 - Feb20.csv')
+    balls = get_shifts_from_csv('Marks Tips 2020 - Feb20.csv')
     print('derp')

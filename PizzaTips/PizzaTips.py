@@ -8,6 +8,7 @@ App to collect tip data for analysis
 
 import re
 import from_CSV
+import datetime as dt
 
 class Employee():
     """Employee constructor
@@ -36,7 +37,7 @@ class Employee():
         Values range from C to P and 3-19, other sections are considered "OUT"
         """
         mapo = {}
-        for a in range(ord('C'),ord('P')):
+        for a in range(ord('B'),ord('Q')):
             for i in range(3,20):
                 mapo[chr(a)+str(i)] = Sec(chr(a)+str(i))
                 
@@ -56,12 +57,14 @@ class Employee():
         tips_from_csv = from_CSV.get_tips_from_csv(csv_fn)
         for shif in tips_from_csv:    # (date, Shift)
             # Add Shift to employee if it does not exist
-            if shif.date not in self.shifts:      
-                self.shifts[shif.date] = shif
+            if shif.date_key not in self.shifts:      
+                self.shifts[shif.date_key] = shif
             else: # Add to shift if it is already there, not sure if I'll keep this
-                self.shifts[shif.date] + shif
+                self.update_shift(shif)
+
+            for tip in shif.tips:
+                self.emp_map[tip.sector].add_tip_sec(tip)
             self.gross_tips += shif.shift_total
-        
     
     @classmethod
     def from_pay(cls,first, last, pay):
@@ -72,6 +75,10 @@ class Employee():
         emp = cls(first, last)
         cls.set_pay(emp, pay)
         return emp
+    
+    @property
+    def cur_shift(self):
+        return list(self.shifts.values())[-1]
          
     def new_shift(self, date):
         """Creates and adds Shifts with tip details to Employee's list of shifts
@@ -95,10 +102,12 @@ class Employee():
         """Creates and adds Shift skeletons with no tip details from CSV"""
         shifts_from_csv = from_CSV.get_shifts_from_csv(csv_fn)
         for shift in shifts_from_csv:
-            if shift.date not in self.shifts:
-                self.shifts[shift.date] = shift
+            if shift.date_key not in self.shifts:
+                self.shifts[shift.date_key] = shift
             else:
                 self.update_shift(shift)
+#             for tip in self.shifts[shift.date_key].tips:
+#                 self.emp_map[tip.sector].add_tip_sec(tip)
     
     def update_shift(self, shift_obj):
         """Compares each attribute of Shift object to be updated
@@ -106,9 +115,20 @@ class Employee():
         If the old value is < new, it gets updated
         """
         for attr, val in shift_obj:
-            if getattr(self.shifts[shift_obj.date], attr) < val:
-                setattr(self.shifts[shift_obj.date], attr, val)
-        return self.shifts[shift_obj.date]
+            curval = getattr(self.shifts[shift_obj.date_key], attr)
+            print(attr, curval, val)
+#             if getattr(self.shifts[shift_obj.date_key], attr) < val:
+            if(attr == "date" or curval == val):
+                continue
+            if(isinstance(curval, (int, float))):
+                if(curval == 0 or curval== 0.0):
+                    setattr(self.shifts[shift_obj.date_key], attr, val)
+            elif(isinstance(curval, list)):
+                if(len(curval) < len(val)):
+                    setattr(self.shifts[shift_obj.date_key], attr, val)
+                    
+#         print(self.shifts[shift_obj.date_key].__str__())
+        return self.shifts[shift_obj.date_key]
         
     @property
     def fullname(self):
@@ -116,7 +136,9 @@ class Employee():
     @property
     def wage(self):
         return '${:0,.2f}/hr'.format(self.pay)
-
+    @property
+    def gross(self):
+        return '${:0,.2f} total tips'.format(self.gross_tips)
 
     def __str__(self):
         return "Employee {}, {}".format(self.fullname, self.wage)
@@ -130,7 +152,7 @@ class Shift():
     """
     def __init__(self, date, sched_hrs=0, actual_hrs=0.0, 
                  actual_miles=0.0, store_miles=0):
-        self.date = date
+        self.date = dt.datetime.strptime(date+" 2020", '%a, %b %d %Y')
         self.tips = []
         self.shift_cash = 0.0
         self.shift_cc = 0.0
@@ -143,6 +165,7 @@ class Shift():
         
     def add_tip_shift(self, tip_obj):
         """Adds Tip object to list of tips for the shift"""
+#         print("add tip shift")
         self.tips.append(tip_obj)
         self.shift_cash += tip_obj.tip_cash
         self.shift_cc += tip_obj.tip_cc
@@ -154,11 +177,33 @@ class Shift():
         for tip in tip_list:
             self.add_tip_shift(tip)
     
-       
+    def clock_in(self, in_time, sched_hrs=3):
+        self.sched_hrs = sched_hrs
+        
+        if(isinstance(in_time, (dt.time, dt.datetime))):
+            self.date = self.date.replace(hour=in_time.hour, minute=in_time.minute)
+        elif(isinstance(in_time,str)):
+            timesplt = in_time.split(":")
+            self.date = self.date.replace(hour=int(timesplt[0]),minute=int(timesplt[1]))
+        else:
+            print("oop")
+            
+            
+    def clock_out(self, out_time=dt.datetime.now(), actual_miles=0, store_miles=0):
+        self.actual_miles = actual_miles
+        self.store_miles = store_miles
+        self.actual_hrs = out_time - self.date
+    
     @property
     def tip_total(self):
         """Returns total tips from shift"""
         return '${}'.format(self.shift_total)
+    @property
+    def actual_hours(self):
+        return '{}'.format(self.actual_hrs.__str__())
+    @property
+    def date_key(self):
+        return self.date.strftime("%a, %b %d")
     
     def __add__(self, other):
         if other.__class__.__name__ == 'Shift':
@@ -178,8 +223,10 @@ class Shift():
     def __iter__(self):
         for attr, value in self.__dict__.items():
             yield attr, value
-#     def __getattr__(self, attr):
-        
+#     def __str__(self):
+#         for attr, value in self.__dict__.items():
+#             print(attr, value)
+#         
 class Sec():
     """Sector of map that holds list of Tip objects
     """
@@ -195,6 +242,7 @@ class Sec():
         
     def add_tip_sec(self, tip_obj):
         """Adds tip to sector, updating each tip value; $/cc/tot"""
+#         print("add tip sec")
         self.sec_tips.append(tip_obj)
         self.sec_cc += tip_obj.tip_cc
         self.sec_cash += tip_obj.tip_cash
@@ -246,7 +294,6 @@ class Tip():
         return '${}, {}, from sec {}'.format(self.tip_amt, self.tip_type, self.sector)
     def __repr__(self):
         return "Tip({}, {}, {})".format(self.sector, self.tip_amt, self.tip_type)
-        
     def __add__(self, other):
         """Overrides add function to access variables"""
         if(isinstance(other,Tip)):
@@ -254,7 +301,9 @@ class Tip():
         elif(isinstance(other, float)):
             return self.tip_amt + other
         else:
-            return 'Cannot add {} and {}\n'.format(type(self), type(other))
+            return 'Cannot add {} and {}\n'.format(type(self), type(other))  
+    def __radd__(self, other):
+        return other.__add__(self)
     
     @classmethod
     def gross(cls):
@@ -266,9 +315,13 @@ if __name__ == '__main__':
     jake = Employee.from_pay("Jacob","Madlem",11.80)
     shelb = Employee("Shelby", "Harmon")
     
-    print(jake.fullname)
-    print(jake.wage)
-#     jake.new_shift("Sat, Feb 1")
+    print(jake.__str__())
+#     shift = jake.new_shift("Sat, Feb 01")
+#     intime = dt.datetime.strptime("16:02","%H:%M")
+#     shift.clock_in(intime, 5)
+#     outtime = dt.datetime.strptime("20200201 22:25:00", "%Y%m%d %H:%M:%S")
+#     shift.clock_out(outtime)
+    
 #     jake.add_tip_emp("D10",5.00,"$")
 #     jake.add_tip_emp("D10",10.00,"cc")
 #     tip_list = [Tip("C17", 10.00, "$"), Tip("C16", 14.00, "cc"), Tip("C8", 5.00, "cc")]
@@ -277,8 +330,8 @@ if __name__ == '__main__':
 #     jake.add_tip_emp("D12", 12.00,"cc")
 #     jake.new_shift(Shift('Sat, Feb 1', 5.0, 6.5, 39.0, 41.0))
 #     shift1.add_tip_shift_csv(tip_list)
-    jake.add_shifts_from_csv('Marks Tips 2020 - Feb20.csv')
-    jake.add_tips_emp_csv('Tips Breakdown 2020 - Feb20.csv')
+#     jake.add_shifts_from_csv('Marks Tips 2020 - Feb20.csv')
+#     jake.add_tips_emp_csv('Tips Breakdown 2020 - Feb20.csv')
     jake.add_shifts_from_csv('Marks Tips 2020 - Mar20.csv')
     jake.add_tips_emp_csv('Tips Breakdown 2020 - Mar20.csv')
 #     print(shift1.tips)

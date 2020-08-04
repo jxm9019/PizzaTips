@@ -9,6 +9,8 @@ App to collect tip data for analysis
 import re
 import from_CSV
 import datetime as dt
+from builtins import classmethod
+from _datetime import datetime, timedelta
 
 class Employee():
     """Employee constructor
@@ -47,7 +49,7 @@ class Employee():
     def add_tip_emp(self, sector, tip_amt, tip_type):
         """Creates Tip object, adds to employee's map, adds to latest shift"""
         new_tip = Tip(sector, tip_amt, tip_type)
-        self.emp_map[new_tip.sector].add_tip_sec(new_tip)
+        self.emp_map[sector].add_tip_sec(new_tip)
         list(self.shifts.values())[-1].add_tip_shift(new_tip)
         self.gross_tips += tip_amt
 #         self.shifts[len(self.shifts)-1].add_tip_shift(new_tip) # for use with list of shifts
@@ -192,7 +194,10 @@ class Shift():
     def clock_out(self, out_time=dt.datetime.now(), actual_miles=0, store_miles=0):
         self.actual_miles = actual_miles
         self.store_miles = store_miles
-        self.actual_hrs = out_time - self.date
+        self.actual_hrs = float('%.2f'%((out_time-self.date).total_seconds()/3600))
+    
+        
+        
     
     @property
     def tip_total(self):
@@ -313,14 +318,15 @@ class Tip():
 if __name__ == '__main__':
     print("Hello Pizza Tips\n")
     jake = Employee.from_pay("Jacob","Madlem",11.80)
-    shelb = Employee("Shelby", "Harmon")
+#     shelb = Employee("Shelby", "Harmon")
     
     print(jake.__str__())
-#     shift = jake.new_shift("Sat, Feb 01")
+    shift = jake.new_shift("Sat, Feb 01")
 #     intime = dt.datetime.strptime("16:02","%H:%M")
-#     shift.clock_in(intime, 5)
-#     outtime = dt.datetime.strptime("20200201 22:25:00", "%Y%m%d %H:%M:%S")
-#     shift.clock_out(outtime)
+    intime = "16:02"
+    shift.clock_in(intime, 5)
+    outtime = dt.datetime.strptime("20200201 22:25:00", "%Y%m%d %H:%M:%S")
+    shift.clock_out(outtime)
     
 #     jake.add_tip_emp("D10",5.00,"$")
 #     jake.add_tip_emp("D10",10.00,"cc")
